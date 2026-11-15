@@ -1,0 +1,5 @@
+dataset,n,naive_ms,dc3_median_ms,dc3_mean_ms,sais_median_ms,sais_mean_ms,speedup_dc3_over_sais,dc3_max_depth,sais_max_depth,dc3_reduction_ratio,sais_reduction_ratio,dc3_peak_aux_kb,sais_peak_aux_kb,dc3_bytes_per_char,sais_bytes_per_char,sais_compact_bpc
+data/corpus_random.txt,250000,-1.0000,11.6717,11.6667,10.3725,10.4998,1.1253,1,1,0.6667,0.3306,3085,1596,20.6388,14.5389,6.3787
+data/corpus_dna.fasta,250000,-1.0000,16.0640,16.6213,8.1677,8.7433,1.9668,4,3,0.6667,0.3480,3713,1462,23.2104,13.9914,5.3041
+data/corpus_source_code.txt,257069,-1.0000,18.8821,19.4489,7.5365,7.7980,2.5054,10,9,0.6667,0.2646,3999,1436,23.9316,13.7210,5.2284
+data/corpus_periodic.txt,250000,-1.0000,12.4195,12.7795,7.4780,7.5207,1.6608,11,8,0.6667,0.3810,3895,1577,23.9541,14.4602,5.2018
