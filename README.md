@@ -122,8 +122,8 @@ Datos extraídos de [`results/benchmark_metrics.csv`](results/benchmark_metrics.
 
 | Familia de Cadena ($n = 500{,}000$) | Tiempo DC3 (ms) | Tiempo SA-IS (ms) | Speedup (`DC3 / SA-IS`) | Razón Reducción ($\alpha_{\text{DC3}}$ / $\alpha_{\text{SA-IS}}$) | Profundidad Recursión (DC3 / SA-IS) | Memoria Pico DC3 (B/char) | Memoria Pico SA-IS 32b / Compact (B/char) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **`random_ascii`** ($|\Sigma|=64$) | `25.59` | **`21.98`** | **`1.16x`** | `0.667` / `0.331` | `1` / `1` | `20.18` | `14.46` / **`6.30`** |
-| **`dna_genome`** ($|\Sigma|=4$) | `34.43` | **`17.01`** | **`2.02x`** | `0.667` / `0.355` | `4` / `4` | `23.21` | `14.48` / **`5.30`** |
+| **`random_ascii`** ($\lvert\Sigma\rvert=64$) | `25.59` | **`21.98`** | **`1.16x`** | `0.667` / `0.331` | `1` / `1` | `20.18` | `14.46` / **`6.30`** |
+| **`dna_genome`** ($\lvert\Sigma\rvert=4$) | `34.43` | **`17.01`** | **`2.02x`** | `0.667` / `0.355` | `4` / `4` | `23.21` | `14.48` / **`5.30`** |
 | **`source_code`** (C/C++) | `36.02` | **`16.46`** | **`2.19x`** | `0.667` / `0.337` | `4` / `4` | `23.21` | `14.15` / **`5.27`** |
 | **`periodic_str`** (Periódica) | `19.84` | **`11.52`** | **`1.72x`** | `0.667` / `0.308` | `11` / `3` | `23.92` | `13.64` / **`5.18`** |
 
