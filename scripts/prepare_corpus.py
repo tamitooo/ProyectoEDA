@@ -41,7 +41,8 @@ def build_dna_corpus(target_len: int, seed: int = 1337) -> str:
     return "".join(chunks)[:target_len]
 
 
-def build_source_code_corpus(repo_root: Path, target_len: int) -> str:
+def build_source_code_corpus(repo_root: Path, target_len: int, seed: int = 2026) -> str:
+    rng = random.Random(seed)
     source_files = [
         repo_root / "include" / "naive_sa.hpp",
         repo_root / "include" / "dc3.hpp",
@@ -50,25 +51,53 @@ def build_source_code_corpus(repo_root: Path, target_len: int) -> str:
         repo_root / "src" / "sais.cpp",
         repo_root / "tests" / "test_runner.cpp",
         repo_root / "bench" / "benchmark.cpp",
+        repo_root / "scripts" / "prepare_corpus.py",
+        repo_root / "scripts" / "profile_cache.py",
+        repo_root / "scripts" / "plot_results.py",
     ]
-    real_code_blocks = []
-    for p in source_files:
-        if p.exists():
-            real_code_blocks.append(p.read_text(encoding="utf-8", errors="ignore"))
-
-    base_code = "\n".join(real_code_blocks)
-    if not base_code:
-        base_code = "int main() { return 0; }\n"
-
     chunks = []
     current_len = 0
-    iteration = 0
+    for p in source_files:
+        if p.exists():
+            text = p.read_text(encoding="utf-8", errors="ignore")
+            chunks.append(text)
+            current_len += len(text)
+
+    # Generar modulos C++ variados (estados de parser LR(1), AST y rutinas de tabla de simbolos)
+    # sin repetir de forma identica el mismo bloque completo.
+    types = ["int", "std::size_t", "uint32_t", "int64_t", "double", "bool"]
+    ops = ["+", "-", "^", "&", "|", "*"]
+    tokens = ["TOK_IDENT", "TOK_NUM", "TOK_LPAREN", "TOK_RPAREN", "TOK_ASSIGN", "TOK_SEMI", "TOK_EOF"]
+    mod_id = 0
     while current_len < target_len:
-        header = f"\n// --- Modulo Lexer LR(1) Bloque #{iteration} ---\n"
-        chunks.append(header)
-        chunks.append(base_code)
-        current_len += len(header) + len(base_code)
-        iteration += 1
+        t_ret = rng.choice(types)
+        t_arg = rng.choice(types)
+        op1, op2 = rng.choice(ops), rng.choice(ops)
+        tok_a, tok_b = rng.choice(tokens), rng.choice(tokens)
+        k1 = rng.randint(3, 251)
+        k2 = rng.randint(100, 9999)
+        snippet = (
+            f"\n// Modulo Sintetico de Analisis Lexico/Sintactico #{mod_id}\n"
+            f"namespace lexer_unit_{mod_id} {{\n"
+            f"static constexpr int STATE_BASE_{mod_id} = {k2};\n"
+            f"inline {t_ret} transition_step_{mod_id}({t_arg} sym, int state, const int* bkt) {{\n"
+            f"    int next_s = (state {op1} {k1}) {op2} static_cast<int>(sym);\n"
+            f"    if (sym == {mod_id % 127} && next_s > 0) {{\n"
+            f"        return static_cast<{t_ret}>(bkt[next_s & 0xFF] + STATE_BASE_{mod_id});\n"
+            f"    }} else if (sym == {(mod_id * 7) % 127}) {{\n"
+            f"        for (int i = 0; i < {(mod_id % 16) + 4}; ++i) {{\n"
+            f"            next_s = (next_s * 31 + i) ^ {k1};\n"
+            f"        }}\n"
+            f"        return static_cast<{t_ret}>(next_s); // {tok_a} -> {tok_b}\n"
+            f"    }}\n"
+            f"    return static_cast<{t_ret}>(0);\n"
+            f"}}\n"
+            f"}} // namespace lexer_unit_{mod_id}\n"
+        )
+        chunks.append(snippet)
+        current_len += len(snippet)
+        mod_id += 1
+
     return "".join(chunks)[:target_len]
 
 
@@ -89,7 +118,7 @@ def main() -> int:
     data_dir.mkdir(parents=True, exist_ok=True)
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    target_size = 250_000
+    target_size = 1_000_000
     corpus_specs = [
         ("corpus_random.txt", build_random_corpus(target_size)),
         ("corpus_dna.fasta", build_dna_corpus(target_size)),
@@ -103,7 +132,7 @@ def main() -> int:
     print("==================================================================")
     for filename, content in corpus_specs:
         out_path = data_dir / filename
-        out_path.write_text(content, encoding="utf-8")
+        out_path.write_text(content, encoding="utf-8", newline="\n")
         unique_chars = len(set(content))
         print(f" [OK] {out_path.relative_to(repo_root)} -> {len(content)} bytes (|Sigma| = {unique_chars})")
         saved_paths.append(str(out_path.relative_to(repo_root)).replace("\\", "/"))

@@ -5,6 +5,7 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -78,11 +79,11 @@ void test_paso2_leq_y_radixPass() {
 
     const std::string str = "mississippi";
     const int n = static_cast<int>(str.size());
-    const int K = 255;
+    const int K = 256;
 
     std::vector<int> s(n + 3, 0);
     for (int i = 0; i < n; ++i) {
-        s[i] = static_cast<int>(static_cast<unsigned char>(str[i]));
+        s[i] = static_cast<int>(static_cast<unsigned char>(str[i])) + 1;
     }
 
     std::vector<int> s12;
@@ -113,11 +114,11 @@ void test_paso3_dc3_phase1() {
     {
         const std::string str = "mississippi";
         const int n = static_cast<int>(str.size());
-        const int K = 255;
+        const int K = 256;
 
         std::vector<int> s(n + 3, 0);
         for (int i = 0; i < n; ++i) {
-            s[i] = static_cast<int>(static_cast<unsigned char>(str[i]));
+            s[i] = static_cast<int>(static_cast<unsigned char>(str[i])) + 1;
         }
 
         std::vector<int> s12;
@@ -134,11 +135,11 @@ void test_paso3_dc3_phase1() {
         const int n = static_cast<int>(str.size());
         const int n0 = (n + 2) / 3;
         const int n02 = n0 + (n / 3);
-        const int K = 255;
+        const int K = 256;
 
         std::vector<int> s(n + 3, 0);
         for (int i = 0; i < n; ++i) {
-            s[i] = static_cast<int>(static_cast<unsigned char>(str[i]));
+            s[i] = static_cast<int>(static_cast<unsigned char>(str[i])) + 1;
         }
 
         std::vector<int> s12;
@@ -167,11 +168,11 @@ void test_paso4_dc3_complete() {
         const int n = static_cast<int>(str.size());
         const int n0 = (n + 2) / 3;
         const int n02 = n0 + (n / 3);
-        const int K = 255;
+        const int K = 256;
 
         std::vector<int> s(n + 3, 0);
         for (int i = 0; i < n; ++i) {
-            s[i] = static_cast<int>(static_cast<unsigned char>(str[i]));
+            s[i] = static_cast<int>(static_cast<unsigned char>(str[i])) + 1;
         }
 
         std::vector<int> s12;
@@ -212,7 +213,7 @@ void test_paso5_sais_types_lms_and_induction() {
     {
         const std::string str = "mmiississippii";
         const int n = static_cast<int>(str.size());
-        const int K = 255;
+        const int K = 256;
 
         const std::vector<int> s = eda::string_to_int_with_sentinel(str);
         std::vector<int> t(n + 1, 0);
@@ -266,7 +267,7 @@ void test_paso6_sais_complete() {
     {
         const std::string str = "mississippi";
         const int n = static_cast<int>(str.size()); // 11
-        const int K = 255;
+        const int K = 256;
 
         const std::vector<int> s = eda::string_to_int_with_sentinel(str);
         std::vector<int> t(n + 1, 0);
@@ -376,14 +377,30 @@ void test_paso6_sais_complete() {
         "mississippimississippimississippi",
         "ababababababababababababababababab",
         "aabaaabaaaabaaaaabaaaaaab",
-        "gattaca_gattaca_gattaca_acgtacgtacgt"
+        "gattaca_gattaca_gattaca_acgtacgtacgt",
+        // Casos con bytes nulos '\0' embebidos (inicio, medio, final, consecutivos, solo nulos)
+        std::string("\0", 1),
+        std::string("\0\0", 2),
+        std::string("\0\0\0\0", 4),
+        std::string("\0abc", 4),
+        std::string("ab\0cd", 5),
+        std::string("abc\0", 4),
+        std::string("a\0\0b\0a\0\0", 8),
+        std::string("\0a\0a\0a\0b\0a\0a", 12),
+        std::string("miss\0issi\0ppi\0", 14)
     };
 
-    std::string high_bytes_str;
-    for (int b = 255; b >= 1; --b) {
-        high_bytes_str.push_back(static_cast<char>(static_cast<unsigned char>(b)));
+    // Alfabeto completo de 256 valores de byte [0..255] en orden descendente y ascendente
+    std::string all_bytes_desc;
+    std::string all_bytes_asc;
+    for (int b = 255; b >= 0; --b) {
+        all_bytes_desc.push_back(static_cast<char>(static_cast<unsigned char>(b)));
     }
-    test_cases.push_back(high_bytes_str);
+    for (int b = 0; b <= 255; ++b) {
+        all_bytes_asc.push_back(static_cast<char>(static_cast<unsigned char>(b)));
+    }
+    test_cases.push_back(all_bytes_desc);
+    test_cases.push_back(all_bytes_asc);
 
     for (const std::string& tc : test_cases) {
         const std::vector<int> sa_sais = eda::build_sais_sa(tc);
@@ -395,11 +412,39 @@ void test_paso6_sais_complete() {
         assert(eda::verify_suffix_array(tc, sa_sais) && "Error: verify_suffix_array fallo en SA-IS.");
     }
 
-    std::cout << "3) Validacion triple (SA-IS == DC3 == Naive SA) en " << test_cases.size() << " escenarios:\n";
+    // 4. Pruebas de estres sobre 1,000 cadenas binarias aleatorias con bytes '\0' y rango [0..255]
+    std::mt19937 rng(202602);
+    std::uniform_int_distribution<int> len_dist(1, 120);
+    for (int trial = 0; trial < 1000; ++trial) {
+        const int len = len_dist(rng);
+        std::string bin_str(len, '\0');
+        for (int i = 0; i < len; ++i) {
+            if (trial % 2 == 0) {
+                // Alta densidad de '\0' mezclado con pocos bytes {0, 1, 2, 255}
+                const int pick = rng() % 4;
+                const unsigned char byte_val = (pick == 0) ? 0u : (pick == 1 ? 1u : (pick == 2 ? 2u : 255u));
+                bin_str[i] = static_cast<char>(byte_val);
+            } else {
+                // Byte uniforme en todo el rango [0..255], inyectando '\0' con probabilidad ~1/8
+                const unsigned char byte_val = (rng() % 8 == 0) ? 0u : static_cast<unsigned char>(rng() % 256);
+                bin_str[i] = static_cast<char>(byte_val);
+            }
+        }
+        const std::vector<int> sa_sais = eda::build_sais_sa(bin_str);
+        const std::vector<int> sa_dc3 = eda::build_dc3_sa(bin_str);
+        const std::vector<int> sa_naive = eda::build_naive_sa(bin_str);
+
+        assert(sa_sais == sa_naive && "Error en prueba binaria con '\\0': SA-IS != Naive SA.");
+        assert(sa_dc3 == sa_naive && "Error en prueba binaria con '\\0': DC3 != Naive SA.");
+        assert(eda::verify_suffix_array(bin_str, sa_sais));
+    }
+
+    std::cout << "3) Validacion triple (SA-IS == DC3 == Naive SA) en " << test_cases.size()
+              << " escenarios deterministas + 1,000 cadenas binarias aleatorias:\n";
     std::cout << "   - Casos borde (vacia, 1 caracter, 'aaaa...a' repetidos): OK\n";
-    std::cout << "   - Empates de subcadenas LMS y multiples niveles recursivos: OK\n";
-    std::cout << "   - Alfabeto completo unsigned char [1..255]: OK\n\n";
-    std::cout << "[OK] ETAPA 3 COMPLETADA AL 100%: Algoritmo SA-IS implementado y verificado.\n";
+    std::cout << "   - Cadenas con bytes nulos '\\0' (inicio, medio, final, consecutivos): OK\n";
+    std::cout << "   - Alfabeto binario completo unsigned char [0..255] (mapeado a [1..256], K=256): OK\n\n";
+    std::cout << "[OK] ETAPA 3 COMPLETADA: Algoritmo SA-IS implementado y verificado.\n";
 }
 
 int main() {

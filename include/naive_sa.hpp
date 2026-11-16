@@ -38,8 +38,8 @@ inline std::vector<int> build_naive_sa(const std::string& s) {
 
     // Ordenamos los indices comparando lexicograficamente los sufijos S[a..n-1] y S[b..n-1]
     // Nota: en C++ char puede tener signo (-128 a 127). Para ser 100% consistentes
-    // con el alfabeto entero sin signo [1..255] que usaran DC3 y SAIS, comparamos
-    // byte a byte como unsigned char.
+    // con el alfabeto entero sin signo [0..255] (mapeado a [1..256] en DC3 y SA-IS),
+    // comparamos byte a byte como unsigned char.
     std::sort(sa.begin(), sa.end(), [&sv, n](int a, int b) {
         if (a == b) return false;
         const int len_a = n - a;
@@ -65,9 +65,10 @@ inline std::vector<int> build_naive_sa(const std::string& s) {
  * @brief Convierte un std::string en un arreglo de enteros con centinela explicito '$' = 0.
  *
  * Esta funcion ilustra la transformacion fundamental requerida por los papers:
- * - Cada caracter c se convierte primero a unsigned char (rango [1, 255]).
+ * - Cada byte c se convierte primero a unsigned char (0..255) y se desplaza en +1
+ *   al rango [1, 256] para soportar cadenas binarias con bytes nulos '\0'.
  * - Se agrega un 0 al final en la posicion n que actua como centinela '$'
- *   (estrictamente menor que cualquier caracter del alfabeto).
+ *   (estrictamente menor que cualquier caracter del alfabeto desplazado [1, 256]).
  *
  * @param s Cadena de entrada de longitud n.
  * @return std::vector<int> Arreglo de tamano n + 1 terminado en 0.
@@ -76,7 +77,7 @@ inline std::vector<int> string_to_int_with_sentinel(const std::string& s) {
     const int n = static_cast<int>(s.size());
     std::vector<int> T(n + 1);
     for (int i = 0; i < n; ++i) {
-        T[i] = static_cast<int>(static_cast<unsigned char>(s[i]));
+        T[i] = static_cast<int>(static_cast<unsigned char>(s[i])) + 1;
     }
     T[n] = 0; // Centinela '$'
     return T;

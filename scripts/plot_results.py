@@ -239,11 +239,11 @@ def plot_fig1_time_scaling(rows, out_path: Path):
         for (px, py), r in zip(sais_pts, sub):
             canvas.draw_circle(px, py, 5, COLOR_SAIS)
 
-        # Etiquetas del ultimo punto (n = 500k)
+        # Etiquetas del ultimo punto (n = 2M)
         canvas.draw_text(dc3_pts[-1][0] - 85, dc3_pts[-1][1] - 18, f"DC3:{float(sub[-1]['dc3_median_ms']):.1f}MS", COLOR_DC3, scale=2)
         canvas.draw_text(sais_pts[-1][0] - 95, sais_pts[-1][1] + 10, f"SAIS:{float(sub[-1]['sais_median_ms']):.1f}MS", COLOR_SAIS, scale=2)
-        canvas.draw_text(x0 + 10, y1 + 8, "N=2K..100K", (90, 90, 90), scale=2)
-        canvas.draw_text(x1 - 95, y1 + 8, "N=500K", (90, 90, 90), scale=2)
+        canvas.draw_text(x0 + 10, y1 + 8, "N=2K..500K", (90, 90, 90), scale=2)
+        canvas.draw_text(x1 - 80, y1 + 8, "N=2M", (90, 90, 90), scale=2)
 
     canvas.save_png(out_path)
 
@@ -263,7 +263,7 @@ def plot_fig2_speedup_by_family(rows, out_path: Path):
         ("source_code", (9, 132, 227)),
         ("periodic_str", (214, 48, 49)),
     ]
-    sizes = [2000, 5000, 10000, 50000, 100000, 250000, 500000]
+    sizes = [2000, 10000, 50000, 100000, 500000, 1000000, 2000000]
     max_sp = 2.5
 
     for g in range(1, 6):
@@ -276,7 +276,7 @@ def plot_fig2_speedup_by_family(rows, out_path: Path):
     for idx_s, s_val in enumerate(sizes):
         gx = x0 + 60 + int((x1 - x0 - 120) * idx_s / (len(sizes) - 1))
         canvas.draw_line(gx, y0 + 2, gx, y1 - 2, COLOR_GRID, thickness=1)
-        label = f"{s_val // 1000}K"
+        label = f"{s_val // 1000000}M" if s_val >= 1000000 else f"{s_val // 1000}K"
         canvas.draw_text(gx - 20, y1 + 12, label, (60, 60, 60), scale=2)
 
     for fam_idx, (fam, col) in enumerate(families):
@@ -304,9 +304,10 @@ def plot_fig2_speedup_by_family(rows, out_path: Path):
 def plot_fig3_memory_and_recursion(rows, out_path: Path):
     canvas = PureCanvasPNG(1400, 820, bg=(252, 253, 255))
     canvas.draw_text(110, 25, "FIG 3: CONSUMO DE MEMORIA (B/CHAR), RECURSION Y RAZON DE REDUCCION", (20, 30, 45), scale=3)
-    canvas.draw_text(290, 58, "COMPARATIVA EN N = 500,000 SOBRE LAS 4 DISTRIBUCIONES", (80, 90, 105), scale=2)
+    max_n = max(int(r["n"]) for r in rows)
+    canvas.draw_text(270, 58, f"COMPARATIVA EN N = {max_n:,} SOBRE LAS 4 DISTRIBUCIONES", (80, 90, 105), scale=2)
 
-    sub500 = [r for r in rows if int(r["n"]) == 500000]
+    sub500 = [r for r in rows if int(r["n"]) == max_n]
 
     # Panel Izquierdo: Bytes por caracter (DC3 vs SA-IS 32b vs SA-IS Compacto)
     x0, y0, x1, y1 = 80, 115, 690, 720
@@ -344,7 +345,7 @@ def plot_fig3_memory_and_recursion(rows, out_path: Path):
     canvas.draw_rect(rx0, ry0, rx1, ry1, COLOR_AXIS, thickness=2)
     canvas.draw_text(rx0 + 20, ry0 - 22, "B) PROFUNDIDAD RECURSIVA Y REDUCCION (%)", (30, 40, 55), scale=2)
 
-    max_depth = 14.0
+    max_depth = max([max(int(r["dc3_max_depth"]), int(r["sais_max_depth"])) for r in sub500] + [8]) * 1.25
     for idx, r in enumerate(sub500):
         base_x = rx0 + 35 + idx * 140
         d_dc3 = int(r["dc3_max_depth"])

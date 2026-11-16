@@ -1,4 +1,4 @@
-# Construcción en Tiempo Lineal de Arreglos de Sufijos mediante los Algoritmos DC3 y SA-IS: Análisis Teórico, Implementación en C++ y Evaluación Experimental de Memoria y Localidad de Caché
+# Construcción en Tiempo Lineal de Arreglos de Sufijos mediante los Algoritmos DC3 y SA-IS: Análisis Teórico, Adaptación en C++17 y Evaluación Experimental de Memoria y Localidad de Caché
 
 **Curso:** CS3014 Estructuras de Datos Avanzadas · Proyecto de Curso I (UTEC 2026-2)  
 **Repositorio:** `ProyectoEDA`
@@ -7,7 +7,7 @@
 
 ## Resumen (*Abstract*)
 
-Los **Arreglos de Sufijos** (*Suffix Arrays*, $SA$) constituyen la estructura de indexación de texto completo más utilizada en bioinformática, compresión de datos sin pérdida (transformada de Burrows-Wheeler y FM-index) y preprocesamiento léxico rápido en compiladores. Aunque durante más de una década su construcción directa requirió tiempo superlineal $\mathcal{O}(n \log n)$, el desarrollo de algoritmos puramente lineales $\mathcal{O}(n)$ demostró que es posible prescindir de la costosa construcción intermedia de un Árbol de Sufijos. En este informe se presenta el diseño, implementación nativa en C++17 y evaluación experimental exhaustiva de los dos algoritmos lineales más influyentes del estado del arte: **DC3 / Skew** (Kärkkäinen & Sanders, 2003), fundamentado en cubiertas de diferencias módulo 3 y ordenamiento por conteo (*Radix Sort*), y **SA-IS** (Nong, Zhang & Chan, 2009), fundamentado en clasificación de sufijos $L/S$, muestreo de subcadenas *Leftmost S-type* (LMS) y ordenamiento inducido (*Induced Sorting*). Evaluamos ambos métodos frente a un generador ingenuo $\mathcal{O}(n^2 \log n)$ sobre cuatro familias de datos (texto aleatorio uniforme, genomas de ADN, código fuente C++ orientado a analizadores léxicos $LR(1)$ y cadenas periódicas de Fibonacci) escalando hasta $n = 500{,}000$ caracteres, e instrumentamos un simulador de jerarquía de caché L1D (32 KB, 8 vías, líneas de 64 B) y L2 (256 KB). Los resultados experimentales demuestran que SA-IS supera consistentemente a DC3 logrando un *speedup* de **$1.16\times$ a $2.51\times$** en tiempo de ejecución, una reducción del **$38\%\text{--}42\%$ en memoria RAM con enteros de 32 bits** (y hasta **$4.4\times$ menos memoria** en el modelo compacto de $5.20\text{--}6.38\text{ B/carácter}$), y hasta **$1.96\times$ menos fallos de caché L1 por carácter**, explicando desde la arquitectura de computadores cómo la razón de reducción adaptativa ($\approx 0.265\text{--}0.355$ frente al $0.667$ fijo de DC3) y los barridos secuenciales de inducción determinan el rendimiento práctico.
+Los **Arreglos de Sufijos** (*Suffix Arrays*, $SA$) constituyen una estructura fundamental de indexación de texto completo en bioinformática, compresión de datos sin pérdida (transformada de Burrows-Wheeler y FM-index) y preprocesamiento léxico en compiladores. Aunque durante más de una década su construcción directa requirió tiempo superlineal $\mathcal{O}(n \log n)$, el desarrollo de algoritmos lineales $\mathcal{O}(n)$ demostró que es posible prescindir de la construcción intermedia de un Árbol de Sufijos. En este informe se presenta el análisis teórico, la adaptación en C++17 y la evaluación experimental de dos de los algoritmos lineales más representativos de la literatura: **DC3 / Skew** (Kärkkäinen & Sanders, 2003), fundamentado en cubiertas de diferencias módulo 3 y ordenamiento por conteo (*Radix Sort*), y **SA-IS** (Nong, Zhang & Chan, 2009), fundamentado en clasificación de sufijos $L/S$, muestreo de subcadenas *Leftmost S-type* (LMS) y ordenamiento inducido (*Induced Sorting*). Nuestras implementaciones adaptan las versiones de referencia del Apéndice A de Kärkkäinen & Sanders (2003) y de Nong et al. (2009) a C++17 con gestión segura de memoria, soporte para el alfabeto binario completo `[0..255]` (mediante desplazamiento `+1` al rango `[1..256]` con centinela `0`) e instrumentación analítica. Evaluamos ambos métodos frente a un generador ingenuo $\mathcal{O}(n^2 \log n)$ sobre cuatro familias de datos escalando hasta $n = 2{,}000{,}000$ caracteres, archivos de corpus de $1\text{ MB}$ y un simulador de jerarquía de caché L1D (32 KB, 8 vías, líneas de 64 B) y L2 (256 KB). Los resultados muestran que en entradas aleatorias uniformes (donde la recursión termina en profundidad 1) ambos algoritmos tienen tiempos similares ($\text{Speedup} \approx 0.95\times\text{--}1.09\times$), mientras que en textos estructurados o con repeticiones (genomas, código fuente C++ y cadenas periódicas) SA-IS alcanza un *speedup* de **$1.32\times$ a $2.25\times$**, reduce en **$\approx 38\%\text{--}42\%$ la memoria analítica en vectores `int` de 32 bits** ($13.64\text{--}14.46\text{ B/char}$ frente a $19.19\text{--}23.98\text{ B/char}$ en DC3, con una proyección teórica de $5.18\text{--}6.30\text{ B/char}$ bajo el modelo compacto en bits) y genera hasta **$1.96\times$ menos fallos de caché L1 por carácter**.
 
 **Palabras Clave:** Arreglo de Sufijos (*Suffix Array*), Tiempo Lineal $\mathcal{O}(n)$, Algoritmo DC3 / Skew, Algoritmo SA-IS, Ordenamiento Inducido (*Induced Sorting*), Subcadenas LMS, Localidad de Caché, Analizadores Léxicos.
 
@@ -20,10 +20,10 @@ Sea $\Sigma$ un alfabeto totalmente ordenado y $S = S[0]S[1]\dots S[n-1]$ una ca
 
 $$S_{SA[0]} < S_{SA[1]} < \dots < S_{SA[n-1]}$$
 
-A diferencia de los Árboles de Sufijos (*Suffix Trees*), que si bien pueden construirse en tiempo $\mathcal{O}(n)$ mediante los algoritmos de Weiner, McCreight, Ukkonen o Farach consumen entre $10n$ y $20n$ bytes de memoria debido a los punteros de nodos y aristas, el Arreglo de Sufijos requiere únicamente $4n$ bytes (un entero de 32 bits por carácter).
+A diferencia de los Árboles de Sufijos (*Suffix Trees*), que si bien pueden construirse en tiempo $\mathcal{O}(n)$ mediante los algoritmos de Weiner, McCreight, Ukkonen o Farach consumen entre $10n$ y $20n$ bytes de memoria debido a los punteros de nodos y aristas, el Arreglo de Sufijos requiere únicamente $4n$ bytes para almacenar la permutación de salida (un entero de 32 bits por carácter).
 
 ### 1.2. De $\mathcal{O}(n^2 \log n)$ a $\mathcal{O}(n)$ y su Aplicación en Analizadores Léxicos
-La construcción ingenua de $SA$ ordenando los $n$ sufijos mediante un algoritmo basado en comparaciones (`std::sort`) realiza $\mathcal{O}(n \log n)$ comparaciones de cadenas, cada una de costo $\mathcal{O}(n)$ en el peor caso, degradándose a $\mathcal{O}(n^2 \log n)$ cuando existen prefijos comunes largos (como ocurre en código fuente con bloques repetidos o secuencias genómicas). En el contexto de compiladores modernos, indexar rápidamente archivos de código fuente para detección de tokens repetidos, autocompletado de símbolos y preprocesamiento en parsers $LR(1)$ exige tanto **complejidad temporal lineal $\mathcal{O}(n)$** como una **huella mínima en memoria caché** para no desplazar las tablas de análisis sintáctico.
+La construcción ingenua de $SA$ ordenando los $n$ sufijos mediante un algoritmo basado en comparaciones (`std::sort`) realiza $\mathcal{O}(n \log n)$ comparaciones de cadenas, cada una de costo $\mathcal{O}(n)$ en el peor caso, degradándose a $\mathcal{O}(n^2 \log n)$ cuando existen prefijos comunes largos (como ocurre en código fuente con bloques repetidos o secuencias genómicas). En el contexto de herramientas de compilación, indexar archivos de código fuente para detección de patrones repetidos, autocompletado de símbolos y preprocesamiento léxico se beneficia tanto de la **complejidad temporal lineal $\mathcal{O}(n)$** como de una **menor huella en memoria caché**.
 
 ---
 
@@ -35,7 +35,7 @@ El algoritmo DC3 (*Difference Cover modulo 3*) explota el hecho de que el conjun
 
 ```mermaid
 flowchart TD
-    A["Entrada s[0..n-1] + padding s[n]=s[n+1]=s[n+2]=0"] --> B["Paso 1: Muestrear posiciones i mod 3 != 0 (n02 = n0 + n2)"]
+    A["Entrada s[0..n-1] en [1..256] + padding s[n]=s[n+1]=s[n+2]=0"] --> B["Paso 1: Muestrear posiciones i mod 3 != 0 (n02 = n0 + n2)"]
     B --> C["Ordenar tripletas (s[i], s[i+1], s[i+2]) con 3 pasadas de radixPass"]
     C --> D["Asignar nombres lexicográficos en s12 (Mitad izq: mod 3 = 1 | Mitad der: mod 3 = 2)"]
     D --> E{"¿Nombres únicos? (name == n02)"}
@@ -67,7 +67,7 @@ SA-IS reemplaza la división aritmética fija por una partición estructural bas
 
 ```mermaid
 flowchart TD
-    A["Entrada s[0..n] con centinela s[n] = 0"] --> B["Clasificación L (0) y S (1) de derecha a izquierda en O(n)"]
+    A["Entrada s[0..n] en [1..256] con centinela s[n] = 0"] --> B["Clasificación L (0) y S (1) de derecha a izquierda en O(n)"]
     B --> C["Sembrar posiciones LMS (t[i]==S && t[i-1]==L) al final de sus cubetas S"]
     C --> D["1.ª Inducción (Ordenar subcadenas LMS): induceSAl (izq->der) + induceSAs (der->izq)"]
     D --> E["Compactar n1 LMS en SA[0..n1-1] y nombrar en SA[n1 + pos/2] -> s1 en SA[n+1-n1..n]"]
@@ -82,11 +82,11 @@ flowchart TD
 1. **Clasificación $L/S$ y Subcadenas LMS (Lema 2.1):**
    Un barrido de $i = n - 1$ hacia $0$ con $t[n] = \text{S}$ asigna $t[i] = \text{S}$ si $s[i] < s[i+1]$, $t[i] = \text{L}$ si $s[i] > s[i+1]$, y $t[i] = t[i+1]$ si empatan. Una posición $i > 0$ es **LMS** si $t[i] == \text{S} \land t[i-1] == \text{L}$. Como $i = 0$ nunca es LMS y jamás pueden existir dos posiciones LMS adyacentes, el número de elementos LMS cumple:
    $$n_1 \le \left\lfloor \frac{n + 1}{2} \right\rfloor$$
-   En textos con caracteres equiprobables (Teorema 3.2), la longitud esperada entre dos LMS es $3$, reduciendo el problema en promedio a $\mathbb{E}[n_1 / n] \le 1/3$.
+   En textos con caracteres independientes y equiprobables (Teorema 3.2), la distancia esperada entre dos LMS es $3$, reduciendo el problema en promedio a $\mathbb{E}[n_1 / n] \approx 1/3$.
 2. **Estructura de Cubetas y Motor de Inducción (`induceSAl` e `induceSAs`):**
    Dentro de la cubeta de cualquier carácter $c$, todo sufijo tipo L es lexicográficamente menor que todo sufijo tipo S (pues el primer carácter distinto tras la racha de $c$'s es $< c$ en un sufijo L y $> c$ en un sufijo S). Por ello, `induceSAl` barre `SA` de izquierda a derecha ($0 \to n$) insertando $j = \text{SA}[i] - 1$ (si $t[j] == \text{L}$) en la cabeza de su cubeta (`bkt[s[j]]++`), e `induceSAs` barre de derecha a izquierda ($n \to 0$) insertando $j = \text{SA}[i] - 1$ (si $t[j] == \text{S}$) en la cola de su cubeta (`bkt[s[j]]--`).
-3. **Nombramiento con el truco `pos / 2` y reutilización in-place de `SA`:**
-   Tras la primera inducción, los $n_1$ índices LMS se compactan en `SA[0..n1-1]`. Se comparan subcadenas LMS adyacentes verificando tanto `s[pos + d]` como `t[pos + d]` hasta el siguiente LMS inclusive. Como dos posiciones LMS nunca son consecutivas, dividir su coordenada entre 2 (`pos / 2`) permite escribir su nombre en `SA[n1 + pos / 2]` en orden posicional sin colisiones y sin alojar arreglos adicionales, compactando luego `s1` en `SA[n + 1 - n1 .. n]`.
+3. **Nombramiento con el desplazamiento `pos / 2` y reutilización in-place de `SA`:**
+   Tras la primera inducción, los $n_1$ índices LMS se compactan en `SA[0..n1-1]`. Se comparan subcadenas LMS adyacentes verificando tanto `s[pos + d]` como `t[pos + d]` hasta el siguiente LMS inclusive. Como dos posiciones LMS nunca son consecutivas, dividir su coordenada entre 2 (`pos / 2`) permite escribir su nombre en `SA[n1 + pos / 2]` en orden posicional sin colisiones y sin alojar arreglos adicionales para `s1`, compactando luego `s1` en `SA[n + 1 - n1 .. n]`.
 
 ---
 
@@ -95,71 +95,84 @@ flowchart TD
 | Propiedad Teórica | Algoritmo DC3 / Skew (2003) | Algoritmo SA-IS (2009) |
 | :--- | :--- | :--- |
 | **Recurrencia Temporal** | $T(n) = T(\lceil 2n/3 \rceil) + \mathcal{O}(n)$ | $T(n) \le T(\lfloor n/2 \rfloor) + \mathcal{O}(n)$ ($\approx T(n/3) + \mathcal{O}(n)$ medio) |
-| **Factor de Serie Geométrica $\sum \alpha^k$** | $\frac{1}{1 - 2/3} = \mathbf{3.0n}$ (fijo en toda entrada) | $\le \frac{1}{1 - 1/2} = 2.0n$ peor caso; $\approx \frac{1}{1 - 1/3} = \mathbf{1.5n}$ típico |
-| **Razón de Reducción ($\alpha$)** | Determinista: $\frac{2}{3} \approx \mathbf{0.667}$ | Adaptativa: $\le 0.500$ (observada: $\mathbf{0.265\text{--}0.381}$) |
-| **Reservas Dinámicas por Nivel** | 4 arreglos nuevos (`s12`, `SA12`, `s0`, `SA0`) + `c` | 2 arreglos (`t`, `bkt`); **`s1` y `SA1` reutilizan `SA` in-place** |
+| **Factor de Serie Geométrica $\sum \alpha^k$** | $\frac{1}{1 - 2/3} = \mathbf{3.0n}$ (cuando recursa a fondo) | $\le \frac{1}{1 - 1/2} = 2.0n$ peor caso; $\approx \frac{1}{1 - 1/3} = \mathbf{1.5n}$ típico |
+| **Razón de Reducción ($\alpha$)** | Determinista: $\frac{2}{3} \approx \mathbf{0.667}$ | Adaptativa: $\le 0.500$ (observada: $\mathbf{0.304\text{--}0.381}$) |
+| **Reservas Dinámicas por Nivel** | 4 vectores nuevos (`s12`, `SA12`, `s0`, `SA0`) + `c` | 2 vectores (`t`, `bkt`); **`s1` y `SA1` reutilizan `SA` in-place** |
 | **Patrón de Acceso a Memoria** | 4 pasadas de *Radix Sort* con saltos indirectos `r[a[i]]` | Barridos secuenciales (`i++` / `i--`) y punteros contiguos `bkt[c]` |
 
 ---
 
 ## 3. Arquitectura de Software y Metodología Experimental
 
-El proyecto fue desarrollado desde cero en **C++17 nativo** (compilado con `g++ 14.2.0` bajo banderas `-Wall -Wextra -Wpedantic -O3`) sin dependencias externas:
-* **Cabeceras e Implementaciones (`include/` y `src/`):**
-  * [`include/naive_sa.hpp`](../include/naive_sa.hpp): Generador de referencia [`eda::build_naive_sa`](../include/naive_sa.hpp#L29-L62) con `std::string_view` ($\mathcal{O}(n)$ en memoria) y auditor independiente [`eda::verify_suffix_array`](../include/naive_sa.hpp#L93-L133).
-  * [`include/dc3.hpp`](../include/dc3.hpp) y [`src/dc3.cpp`](../src/dc3.cpp): Implementación de `leq`, `radixPass`, `dc3Phase1`, `suffixArray`, `build_dc3_sa` y rastreador de memoria `DC3Tracker`.
-  * [`include/sais.hpp`](../include/sais.hpp) y [`src/sais.cpp`](../src/sais.cpp): Implementación de `isLMS`, `lmsSubstringsAreEqual`, `classifyLS`, `getBuckets`, `induceSAl`, `induceSAs`, `sais_core`, `build_sais_sa` y rastreador `SAISTracker`.
-* **Suite de Correctitud ([`tests/test_runner.cpp`](../tests/test_runner.cpp)):** Verifica todas las trazas intermedias de los papers (`"mississippi"`, `"mmiississippii"`, `"mmiissiissiippii"`, `"bananas"`) y realiza validación cruzada triple (`SA-IS == DC3 == Naive SA`) sobre 25 escenarios borde.
-* **Motor de Benchmarks y Simulador de Caché ([`bench/benchmark.cpp`](../bench/benchmark.cpp)):**
-  * Mide tiempo de pared con `std::chrono::steady_clock` (1 ronda de *warm-up* + 5 repeticiones reportando mediana y media).
-  * Modela en [`CacheHierarchySimulator`](../bench/benchmark.cpp#L42-L129) una caché de datos **L1D de 32 KB** (64 conjuntos $\times$ 8 vías, líneas de 64 bytes = 16 `int`s por línea) y **L2 de 256 KB** (512 conjuntos $\times$ 8 vías) con reemplazo LRU exacto.
+### 3.1. Origen del Código de Referencia y Adaptaciones en C++17
+Las implementaciones de DC3 y SA-IS de este proyecto están **basadas directamente en los algoritmos de referencia publicados en el Apéndice A de Kärkkäinen & Sanders (2003) y en la Sección 2 de Nong, Zhang & Chan (2009)**, adaptadas a **C++17** (compiladas con `g++ 14.2.0` bajo `-Wall -Wextra -Wpedantic -O3`) con las siguientes mejoras de ingeniería:
+1. **Soporte para el alfabeto binario completo `[0..255]` (incluyendo bytes nulos `\0`):** En los envoltorios públicos [`eda::build_dc3_sa`](../src/dc3.cpp#L217-L255), [`eda::build_sais_sa`](../src/sais.cpp#L186-L231) y [`eda::string_to_int_with_sentinel`](../include/naive_sa.hpp#L75-L83), cada byte `str[i]` se transforma mediante `static_cast<int>(static_cast<unsigned char>(str[i])) + 1` al rango `[1, 256]` con `K = 256`. Esto reserva el valor `0` exclusivamente para el centinela explícito `$` (`s[n] = 0`) y el padding final (`s[n] = s[n+1] = s[n+2] = 0`), evitando que cadenas con bytes `\0` embebidos colisionen con el centinela.
+2. **Reemplazo de `new[]`/`delete[]` crudos por `std::vector<int>` (RAII):** Se eliminaron las reservas manuales de punteros crudos del código C original para garantizar seguridad ante excepciones y ausencia de fugas de memoria.
+3. **Suite de Pruebas ([`tests/test_runner.cpp`](../tests/test_runner.cpp)):** Verifica todas las trazas intermedias de ambos papers (`"mississippi"`, `"mmiississippii"`, `"mmiissiissiippii"`, `"bananas"`), 35 casos deterministas (incluyendo cadenas con bytes `\0` al inicio, al medio, al final, múltiples `\0\0` consecutivos y los 256 valores de byte `[0..255]`) y **1,000 cadenas binarias aleatorias con `\0`**, comprobando la identidad exacta `SA-IS == DC3 == Naive SA` y el verificador [`eda::verify_suffix_array`](../include/naive_sa.hpp#L93-L133).
+
+### 3.2. Metodología de Medición de Tiempo, Memoria y Caché
+En [`bench/benchmark.cpp`](../bench/benchmark.cpp) se instrumentaron tres familias de métricas cuya interpretación metodológica debe distinguirse con precisión:
+* **Tiempo de ejecución (`ms`):** Tiempo de reloj (*wall-clock*) medido con `std::chrono::steady_clock` ejecutando 1 corrida de calentamiento (*warm-up* y verificación de igualdad `SA_DC3 == SA_SAIS`) seguida de 5 repeticiones independientes de las cuales se reportan la **mediana** y la **media**.
+* **Memoria Analítica de Vectores (`B/char` en 32 bits) vs. Proyección Compacta (`Compact B/char`):**
+  * `dc3_bytes_per_char` y `sais_bytes_per_char` contabilizan de forma **analítica exacta** el pico de bytes reservados simultáneamente por los vectores `std::vector<int>` del algoritmo a lo largo del árbol recursivo (`size() * sizeof(int)`), dividido entre $n$. En nuestra implementación, el arreglo de tipos `t` en [`src/sais.cpp`](../src/sais.cpp#L46) se almacena como `std::vector<int> t(n + 1)` por claridad pedagógica y velocidad de acceso en C++.
+  * `sais_compact_bpc` reporta una **proyección teórica** que calcula cuánto ocuparía exactamente la misma ejecución recursiva bajo la representación compacta de la Tabla 1 de Nong et al. (2009), donde la cadena de entrada de nivel 0 ocupa `1 byte/char`, `SA` ocupa `4 bytes/char`, el arreglo booleano `t` se empaqueta en `1 bit/char` (`(n + 8) / 8` bytes) en cada nivel y `bkt` se libera antes de descender a la llamada recursiva.
+  * Adicionalmente, al finalizar el ejecutable se consulta el `PeakWorkingSetSize` del proceso completo mediante la API de Windows (`GetProcessMemoryInfo` en `psapi.h`) como referencia global del sistema operativo.
+* **Simulador de Jerarquía de Caché ([`CacheHierarchySimulator`](../bench/benchmark.cpp#L46-L141)):** Modela por software una caché de datos **L1D de 32 KB** (64 conjuntos $\times$ 8 vías, líneas de 64 bytes = 16 `int`s por línea) y **L2 de 256 KB** (512 conjuntos $\times$ 8 vías) con política de reemplazo LRU exacta.
 
 ---
 
 ## 4. Resultados Experimentales y Discusión Crítica
 
-### 4.1. Escalamiento del Tiempo de Construcción vs. Tamaño de Entrada $n$
+### 4.1. Escalamiento del Tiempo de Construcción ($n = 2{,}000$ a $n = 2{,}000{,}000$)
 
-La Tabla 1 resume los tiempos medianos de construcción (en milisegundos) extraídos de [`results/benchmark_metrics.csv`](../results/benchmark_metrics.csv) para las 4 familias sintéticas desde $n = 2{,}000$ hasta $n = 500{,}000$:
+La Tabla 1 resume los tiempos medianos de construcción (en milisegundos) extraídos de [`results/benchmark_metrics.csv`](../results/benchmark_metrics.csv) para las 4 familias sintéticas desde $n = 2{,}000$ hasta $n = 2{,}000{,}000$:
 
 | Familia | $n$ | Naive (ms) | DC3 (ms) | SA-IS (ms) | Speedup (DC3 / SA-IS) | Profundidad (DC3 / SA-IS) | Razón Reducción (DC3 / SA-IS) |
 | :--- | ---: | ---: | ---: | ---: | :---: | :---: | :---: |
-| **`random_ascii`** | $10{,}000$ | $0.99$ | $0.41$ | $0.39$ | $1.04\times$ | $1 / 1$ | $0.667 / 0.329$ |
-| **`random_ascii`** | $100{,}000$ | --- | $4.35$ | $3.89$ | $1.12\times$ | $1 / 1$ | $0.667 / 0.330$ |
-| **`random_ascii`** | $500{,}000$ | --- | $25.59$ | $21.98$ | $\mathbf{1.16\times}$ | $1 / 1$ | $0.667 / 0.331$ |
-| **`dna_genome`** | $10{,}000$ | $1.82$ | $0.50$ | $0.33$ | $1.53\times$ | $3 / 3$ | $0.667 / 0.356$ |
-| **`dna_genome`** | $100{,}000$ | --- | $5.91$ | $3.18$ | $1.86\times$ | $4 / 3$ | $0.667 / 0.355$ |
-| **`dna_genome`** | $500{,}000$ | --- | $34.43$ | $17.01$ | $\mathbf{2.02\times}$ | $4 / 4$ | $0.667 / 0.355$ |
-| **`source_code`** | $10{,}000$ | $1.57$ | $0.51$ | $0.31$ | $1.68\times$ | $3 / 3$ | $0.667 / 0.335$ |
-| **`source_code`** | $100{,}000$ | --- | $5.56$ | $2.89$ | $1.92\times$ | $4 / 3$ | $0.667 / 0.336$ |
-| **`source_code`** | $500{,}000$ | --- | $36.02$ | $16.46$ | $\mathbf{2.19\times}$ | $4 / 4$ | $0.667 / 0.337$ |
-| **`periodic_str`** | $2{,}000$ | $4.36$ | $0.07$ | $0.04$ | $1.92\times$ | $6 / 3$ | $0.666 / 0.308$ |
-| **`periodic_str`** | $10{,}000$ | $\mathbf{153.91}$ | $0.41$ | $0.22$ | $1.89\times$ | $8 / 3$ | $0.667 / 0.308$ |
-| **`periodic_str`** | $500{,}000$ | --- | $19.84$ | $11.52$ | $\mathbf{1.72\times}$ | $\mathbf{11 / 3}$ | $0.667 / 0.308$ |
+| **`random_ascii`** | $10{,}000$ | $1.68$ | $0.63$ | $0.66$ | $0.96\times$ | $1 / 1$ | $0.667 / 0.329$ |
+| **`random_ascii`** | $100{,}000$ | --- | $7.06$ | $6.67$ | $1.06\times$ | $1 / 1$ | $0.667 / 0.330$ |
+| **`random_ascii`** | $500{,}000$ | --- | $40.26$ | $37.10$ | $1.09\times$ | $1 / 1$ | $0.667 / 0.331$ |
+| **`random_ascii`** | $1{,}000{,}000$ | --- | $59.53$ | $56.00$ | $1.06\times$ | $1 / 1$ | $0.667 / 0.331$ |
+| **`random_ascii`** | $2{,}000{,}000$ | --- | $147.12$ | $155.18$ | $0.95\times$ | $1 / 1$ | $0.667 / 0.331$ |
+| **`dna_genome`** | $10{,}000$ | $2.07$ | $0.72$ | $0.48$ | $1.48\times$ | $3 / 3$ | $0.667 / 0.356$ |
+| **`dna_genome`** | $100{,}000$ | --- | $6.81$ | $3.65$ | $1.86\times$ | $4 / 3$ | $0.667 / 0.355$ |
+| **`dna_genome`** | $500{,}000$ | --- | $40.90$ | $19.33$ | $\mathbf{2.12\times}$ | $4 / 4$ | $0.667 / 0.355$ |
+| **`dna_genome`** | $1{,}000{,}000$ | --- | $82.72$ | $44.87$ | $1.84\times$ | $4 / 4$ | $0.667 / 0.355$ |
+| **`dna_genome`** | $2{,}000{,}000$ | --- | $194.85$ | $114.19$ | $\mathbf{1.71\times}$ | $4 / 4$ | $0.667 / 0.355$ |
+| **`source_code`** | $10{,}000$ | $1.81$ | $0.58$ | $0.34$ | $1.67\times$ | $3 / 3$ | $0.667 / 0.335$ |
+| **`source_code`** | $100{,}000$ | --- | $6.62$ | $3.19$ | $2.08\times$ | $4 / 3$ | $0.667 / 0.336$ |
+| **`source_code`** | $500{,}000$ | --- | $37.58$ | $17.43$ | $\mathbf{2.16\times}$ | $4 / 4$ | $0.667 / 0.337$ |
+| **`source_code`** | $1{,}000{,}000$ | --- | $79.35$ | $36.98$ | $\mathbf{2.15\times}$ | $4 / 4$ | $0.667 / 0.337$ |
+| **`source_code`** | $2{,}000{,}000$ | --- | $189.16$ | $118.42$ | $\mathbf{1.60\times}$ | $4 / 4$ | $0.667 / 0.337$ |
+| **`periodic_str`** | $10{,}000$ | $\mathbf{183.66}$ | $0.65$ | $0.34$ | $1.89\times$ | $8 / 3$ | $0.667 / 0.308$ |
+| **`periodic_str`** | $500{,}000$ | --- | $21.59$ | $12.01$ | $1.80\times$ | $11 / 3$ | $0.667 / 0.308$ |
+| **`periodic_str`** | $1{,}000{,}000$ | --- | $46.04$ | $25.52$ | $\mathbf{1.80\times}$ | $12 / 3$ | $0.667 / 0.308$ |
+| **`periodic_str`** | $2{,}000{,}000$ | --- | $95.76$ | $72.66$ | $1.32\times$ | $\mathbf{13 / 3}$ | $0.667 / 0.308$ |
 
 ![Figura 1: Escalamiento del tiempo de construcción (DC3 vs SA-IS)](../results/fig1_time_scaling.png)
 
 **Hallazgos clave del escalamiento temporal:**
-1. **Colapso cuadrático de `Naive` ante repeticiones:** En `random_ascii` ($n = 10{,}000$), dos sufijos aleatorios difieren en sus primeros $1\text{--}2$ caracteres y `build_naive_sa` tarda solo $0.99\text{ ms}$. Sin embargo, en `periodic_str` ($n = 10{,}000$), los sufijos comparten prefijos idénticos de miles de caracteres, disparando el tiempo de `Naive` a **$153.91\text{ ms}$** ($700\times$ más lento que los $0.22\text{ ms}$ de SA-IS).
-2. **Invarianza lineal $\mathcal{O}(n)$ de DC3 y SA-IS:** En las 4 gráficas de la Figura 1, tanto DC3 como SA-IS trazan rectas con pendiente constante respecto a $n$, confirmando empíricamente su cota lineal.
+1. **Degradación cuadrática de `Naive` ante repeticiones:** En `random_ascii` ($n = 10{,}000$), dos sufijos aleatorios difieren en sus primeros $1\text{--}2$ caracteres y `build_naive_sa` tarda solo $1.68\text{ ms}$. Sin embargo, en `periodic_str` ($n = 10{,}000$), los sufijos comparten prefijos idénticos de miles de caracteres, elevando el tiempo de `Naive` a **$183.66\text{ ms}$** ($540\times$ más lento que los $0.34\text{ ms}$ de SA-IS).
+2. **Por qué `random_ascii` muestra paridad ($\approx 0.95\times\text{--}1.09\times$) mientras los textos con estructura repetitiva favorecen claramente a SA-IS ($1.60\times\text{--}2.16\times$):**
+   En `random_ascii` ($|\Sigma| = 64$), la entropía por carácter es alta y casi todos los contextos cortos son únicos, por lo que tanto DC3 como SA-IS terminan en **profundidad recursiva 1**. Con un solo nivel de recursión, el costo de las 4 pasadas de `radixPass` y el `merge` de DC3 es muy similar al costo de los dos ciclos de inducción de SA-IS (más la comparación de subcadenas LMS), e incluso a $n = 2{,}000{,}000$ DC3 resulta ligeramente más rápido ($147.12\text{ ms}$ vs. $155.18\text{ ms}$, $\text{Speedup} = 0.95\times$). En cambio, tan pronto como el texto contiene repeticiones o un alfabeto reducido (`dna_genome`, `source_code`, `periodic_str`), la recursión desciende $3\text{ a }13$ niveles: allí la serie geométrica de DC3 ($\sum (2/3)^k \to 3.0n$) acumula mucho más trabajo y reservas de memoria que la de SA-IS ($\sum (1/3)^k \to 1.5n$), otorgando a SA-IS una ventaja sostenida de **$1.60\times\text{ a }2.16\times$**.
 
 ---
 
-### 4.2. Análisis de *Speedup* y Desempeño en los Corpus de `data/`
+### 4.2. Análisis de *Speedup* y Desempeño en los Corpus de $1\text{ MB}$ en `data/`
 
 ![Figura 2: Speedup de SA-IS sobre DC3 por familia de cadenas](../results/fig2_speedup_by_family.png)
 
-Al evaluar los 4 archivos de corpus reales generados en `data/` ([`results/corpus_benchmark.csv`](../results/corpus_benchmark.csv), $n \approx 250{,}000$), obtenemos:
+Al evaluar los 4 archivos de corpus de $1{,}000{,}000\text{ bytes}$ generados en `data/` ([`results/corpus_benchmark.csv`](../results/corpus_benchmark.csv)), obtenemos:
 
-| Archivo de Corpus (`data/`) | Tamaño $n$ | $\|\Sigma\|$ | DC3 (ms) | SA-IS (ms) | Speedup | Profundidad (D/S) | Reducción (D / S) | Memoria B/char (DC3 / SAIS / Comp) |
+| Archivo de Corpus (`data/`) | Tamaño $n$ | $\|\Sigma\|$ | DC3 (ms) | SA-IS (ms) | Speedup | Profundidad (D/S) | Reducción (D / S) | Memoria B/char (DC3 / SAIS 32b / Proy. Comp.) |
 | :--- | ---: | :---: | ---: | ---: | :---: | :---: | :---: | :---: |
-| `data/corpus_random.txt` | $250{,}000$ | $64$ | $11.67$ | $10.37$ | $1.13\times$ | $1 / 1$ | $0.667 / 0.331$ | $20.64 / 14.54 / 6.38$ |
-| `data/corpus_dna.fasta` | $250{,}000$ | $4$ | $16.06$ | $8.17$ | $\mathbf{1.97\times}$ | $4 / 3$ | $0.667 / 0.348$ | $23.21 / 13.99 / 5.30$ |
-| `data/corpus_source_code.txt` | $257{,}069$ | $95$ | $18.88$ | $7.54$ | $\mathbf{2.51\times}$ | $10 / 9$ | $0.667 / \mathbf{0.265}$ | $23.93 / 13.72 / 5.23$ |
-| `data/corpus_periodic.txt` | $250{,}000$ | $10$ | $12.42$ | $7.48$ | $1.66\times$ | $11 / 8$ | $0.667 / 0.381$ | $23.95 / 14.46 / 5.20$ |
+| `data/corpus_random.txt` | $1{,}000{,}000$ | $64$ | $64.61$ | $60.75$ | $1.06\times$ | $1 / 1$ | $0.667 / 0.331$ | $19.63 / 14.35 / 6.20$ |
+| `data/corpus_dna.fasta` | $1{,}000{,}000$ | $4$ | $84.72$ | $44.65$ | $\mathbf{1.90\times}$ | $4 / 3$ | $0.667 / 0.347$ | $23.21 / 13.96 / 5.29$ |
+| `data/corpus_source_code.txt` | $1{,}000{,}000$ | $95$ | $85.92$ | $38.19$ | $\mathbf{2.25\times}$ | $5 / 5$ | $0.667 / \mathbf{0.304}$ | $23.47 / 13.99 / 5.25$ |
+| `data/corpus_periodic.txt` | $1{,}000{,}000$ | $10$ | $57.01$ | $34.74$ | $1.64\times$ | $12 / 8$ | $0.667 / 0.381$ | $23.97 / 14.46 / 5.20$ |
 
-**¿Por qué SA-IS alcanza su máximo *speedup* ($2.51\times$) sobre el código fuente C++ (`corpus_source_code.txt`)?**
-En el código fuente real, las secuencias de espacios de indentación (`"    "`), comentarios (`"// ---"`) e identificadores estructurados producen rachas monótonas largas de caracteres tipo L o tipo S antes de cambiar de dirección (`L -> S`). Como consecuencia, las subcadenas LMS tienen una longitud media de $\approx 3.77$ caracteres, comprimiendo el primer subproblema recursivo a solo el **$26.5\%$ del tamaño original ($n_1 / n = 0.265$)**, mientras que DC3 está obligado por diseño a conservar siempre el **$66.7\%$ ($n_{02} / n = 0.667$)**. Esto confirma directamente la hipótesis central de nuestra propuesta: **SA-IS es más de $2.5$ veces más rápido que DC3 para indexación léxica de código fuente**.
+**Análisis del desempeño en código fuente (`corpus_source_code.txt`, $n = 1{,}000{,}000$):**
+El archivo `corpus_source_code.txt` combina el código fuente real del repositorio con módulos C++ variados de análisis léxico y sintáctico (funciones de transición parametrizadas, tablas de estados y estructuras AST). En este tipo de texto estructurado, las rachas de espacios de indentación, palabras reservadas (`namespace`, `inline`, `static constexpr`, `return`) e identificadores producen secuencias monótonas de tipos $L$ y $S$ que elevan la longitud media de las subcadenas LMS a $\approx 3.29$ caracteres, comprimiendo el primer subproblema recursivo al **$30.4\%$ del tamaño original ($n_1 / n = 0.304$)** frente al **$66.7\%$ fijo de DC3**. Con una profundidad moderada de $5$ niveles en ambos algoritmos, SA-IS completa la construcción en **$38.19\text{ ms}$ frente a $85.92\text{ ms}$ de DC3 ($2.25\times$ más rápido)**.
 
 ---
 
@@ -167,11 +180,12 @@ En el código fuente real, las secuencias de espacios de indentación (`"    "`)
 
 ![Figura 3: Consumo de Memoria RAM (B/char), Profundidad Recursiva y Razón de Reducción](../results/fig3_memory_and_recursion.png)
 
-1. **Huella de Memoria RAM (`B/char`):**
-   * En nuestra implementación con arreglos `int` de 32 bits, **DC3 consume entre $20.18$ y $23.95\text{ B/carácter}$**, ya que en cada nivel recursivo mantiene simultáneamente en el *heap* los vectores `s12`, `SA12`, `s0` y `SA0` con factor acumulativo $\sum (2/3)^k = 3$.
-   * **SA-IS consume solo entre $13.64$ y $14.54\text{ B/carácter}$** en representación `int` de 32 bits, y apenas **$5.18\text{ a }6.38\text{ B/carácter}$ en el modelo compacto** (donde `s` de nivel 0 ocupa $1\text{ B/char}$, `SA` ocupa $4\text{ B/char}$ y el vector booleano `t` ocupa $1\text{ bit/char}$), reproduciendo con exactitud el valor de **$5.12\text{ B/char}$** reportado por Nong et al. (2009) en su Tabla 1.
-2. **Contraste de Profundidad Recursiva en Cadenas Periódicas (`D = 11` vs `D = 3`):**
-   En `periodic_str` ($n = 500{,}000$), cada nivel de DC3 solo agrupa de $3$ en $3$ caracteres ($3^1, 3^2, 3^3, \dots$) y reduce el tamaño lentamente a razón de $2/3$, requiriendo **11 niveles recursivos** para resolver los empates periódicos. En cambio, las subcadenas LMS de SA-IS capturan períodos variables completos desde el primer nivel y reducen el tamaño a razón de $0.308$, resolviendo todos los empates en solo **3 niveles recursivos**.
+1. **Huella de Memoria Analítica (`B/char` en 32 bits) y Proyección Compacta:**
+   * En nuestra implementación con vectores `std::vector<int>` de 32 bits ($n = 2{,}000{,}000$), **DC3 requiere entre $19.19\text{ B/char}$** (en `random_ascii`, profundidad 1) **y $23.98\text{ B/char}$** (en `periodic_str`, profundidad 13), dado que en cada nivel recursivo aloja los vectores `s12`, `SA12`, `s0` y `SA0`.
+   * **SA-IS requiere entre $13.64$ y $14.44\text{ B/char}$** en representación `int` de 32 bits (un ahorro del $26\%\text{--}43\%$ respecto a DC3), gracias a que `s1` y `SA1` reutilizan el propio arreglo `SA` sin nuevas reservas de vectores para el subproblema reducido.
+   * En la **proyección teórica del modelo compacto** (`sais_compact_bpc`, donde `t` se empaquetaría a $1\text{ bit/char}$ y `s` de nivel 0 a $1\text{ B/char}$), el consumo proyectado se sitúa entre **$5.18$ y $6.10\text{ B/char}$**, consistente con la cota reportada por Nong et al. (2009).
+2. **Contraste de Profundidad Recursiva en Cadenas Periódicas (`D = 13` vs `D = 3` en $n = 2{,}000{,}000$):**
+   En `periodic_str` ($n = 2{,}000{,}000$), cada nivel de DC3 solo agrupa de $3$ en $3$ símbolos y reduce la longitud lentamente a razón de $2/3$, necesitando **13 niveles recursivos** para desambiguar las repeticiones periódicas. En cambio, las subcadenas LMS de SA-IS capturan bloques completos del patrón repetido desde el primer nivel ($\alpha = 0.308$) y resuelven todos los empates en solo **3 niveles recursivos**.
 
 ---
 
@@ -189,15 +203,15 @@ La Tabla 3 presenta las métricas obtenidas con nuestro simulador de jerarquía 
 ![Figura 4: Fallos de caché L1 por carácter y desempeño en archivos de corpus](../results/fig4_cache_and_corpus.png)
 
 **Interpretación arquitectónica:**
-En una CPU moderna, una operación aritmética en registro toma $\sim 0.5\text{ ns}$ ($1\text{--}2$ ciclos), mientras que un fallo de caché L1 que acierta en L2 cuesta $\sim 4\text{ ns}$ ($\sim 12\text{ ciclos}$) y un fallo de L2 hacia L3/RAM cuesta entre $15\text{ ns}$ y $70\text{ ns}$ ($50\text{--}200\text{ ciclos}$). Como ambos algoritmos realizan únicamente operaciones enteras simples dentro de sus bucles, **el tiempo de ejecución real está gobernado por las detenciones del procesador (*memory stalls*) esperando líneas de caché**. El hecho de que DC3 sufra **$1.93\times\text{ a }1.96\times$ más fallos L1 por carácter** y **$1.67\times$ más fallos L2** en genomas y código fuente explica de manera directa y cuantitativa por qué SA-IS es **$\approx 2.0\times\text{ a }2.5\times$ más rápido en tiempo de reloj**.
+En una CPU moderna, una operación aritmética en registro toma $\sim 0.5\text{ ns}$ ($1\text{--}2$ ciclos), mientras que un fallo de caché L1 que acierta en L2 cuesta $\sim 4\text{ ns}$ ($\sim 12\text{ ciclos}$) y un fallo de L2 hacia L3/RAM cuesta entre $15\text{ ns}$ y $70\text{ ns}$ ($50\text{--}200\text{ ciclos}$). En textos estructurados (`dna_genome`, `source_code`, `periodic_str`), el mayor número de niveles recursivos y los accesos indirectos `r[a[i]]` de DC3 producen entre **$1.93\times$ y $1.96\times$ más fallos L1 por carácter** y hasta **$1.67\times$ más fallos L2** que SA-IS, lo cual se correlaciona directamente con el *speedup* de $1.60\times\text{--}2.25\times$ observado en tiempo de ejecución.
 
 ---
 
 ## 5. Conclusiones y Recomendaciones Prácticas
 
-1. **Superioridad práctica de SA-IS en tiempo, memoria y caché:** Aunque tanto DC3 como SA-IS poseen complejidad temporal asintótica $\mathcal{O}(n)$, SA-IS reduce el trabajo acumulado de la recursión de $3.0n$ a $\approx 1.36n\text{--}1.54n$, elimina las reservas dinámicas de subproblemas al almacenar `SA1` y `s1` dentro del propio arreglo `SA`, y reduce casi a la mitad los fallos de caché L1 gracias a la localidad espacial de sus barridos de inducción.
-2. **Idoneidad para Analizadores Léxicos y Compiladores:** En código fuente C++ (`corpus_source_code.txt`), SA-IS alcanzó su mejor tasa de compresión estructural ($n_1 / n = 0.265$) y un *speedup* de **$2.51\times$** sobre DC3, posicionándose como el algoritmo ideal para indexación en memoria dentro de herramientas de análisis léxico y sintáctico.
-3. **Cuándo sigue siendo relevante DC3:** La ventaja fundamental de DC3 reside en que su fase recursiva y su fusión pueden paralelizarse y adaptarse a modelos de **memoria externa (*External Memory*)** y **PRAM/BSP** (Teorema 2 de Kärkkäinen & Sanders, 2003), mientras que los barridos `induceSAl` e `induceSAs` de SA-IS tienen una dependencia secuencial inherente (el elemento escrito en `SA[bkt[s[j]]]` es leído iteraciones más adelante dentro del mismo barrido).
+1. **Balance empírico entre DC3 y SA-IS:** Ambos algoritmos cumplen rigurosamente su cota temporal lineal $\mathcal{O}(n)$. Cuando la entrada es aleatoria uniforme de alta entropía (`random_ascii`) y la recursión se detiene en el nivel 1, el rendimiento temporal de ambos métodos es prácticamente equivalente ($\text{Speedup} \approx 0.95\times\text{--}1.09\times$). Cuando la entrada presenta estructura léxica, alfabetos pequeños o repeticiones (`dna_genome`, `source_code`, `periodic_str`), la menor razón de reducción de SA-IS ($\approx 0.304\text{--}0.381$ frente a $0.667$) y su reutilización de memoria in-place le otorgan una ventaja de **$1.32\times\text{ a }2.25\times$ en velocidad** y un ahorro de **$\approx 38\%\text{--}42\%$ en memoria de vectores de 32 bits**.
+2. **Idoneidad para Analizadores Léxicos y Compiladores:** En el corpus de código fuente C++ de $1\text{ MB}$ (`corpus_source_code.txt`), SA-IS logró una razón de reducción de $n_1 / n = 0.304$ y un *speedup* de **$2.25\times$** sobre DC3, confirmando su conveniencia para indexación en memoria dentro de herramientas de análisis léxico y sintáctico.
+3. **Vigencia de DC3 en Arquitecturas Paralelas y Memoria Externa:** La principal fortaleza estructural de DC3 reside en que sus fases de muestreo, *Radix Sort* de tripletas, sumas prefijas y fusión son altamente paralelizables y adaptables a modelos de **memoria externa (*External Memory*)**, **GPU** y **PRAM/BSP** (Teorema 2 de Kärkkäinen & Sanders, 2003), mientras que los barridos `induceSAl` e `induceSAs` de SA-IS poseen una dependencia secuencial inherente ($SA[i] \to SA[i]-1$).
 
 ---
 

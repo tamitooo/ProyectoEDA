@@ -236,12 +236,12 @@ std::vector<int> build_dc3_sa(const std::string& str, DC3Stats* stats) {
 
     std::vector<int> s(n + 3, 0);
     for (int i = 0; i < n; ++i) {
-        s[i] = static_cast<int>(static_cast<unsigned char>(str[i]));
+        s[i] = static_cast<int>(static_cast<unsigned char>(str[i])) + 1;
     }
 
     std::vector<int> SA(n, 0);
     DC3Tracker tracker{stats, 0};
-    suffixArrayInternal(s.data(), SA.data(), n, 255, 0, stats != nullptr ? &tracker : nullptr);
+    suffixArrayInternal(s.data(), SA.data(), n, 256, 0, stats != nullptr ? &tracker : nullptr);
 
     if (stats != nullptr) {
         const auto t_end = std::chrono::steady_clock::now();

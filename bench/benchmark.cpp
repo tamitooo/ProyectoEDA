@@ -704,18 +704,18 @@ int run_cache_profiler_mode(const std::string& csv_path) {
             CacheHierarchySimulator sim_dc3;
             {
                 std::vector<int> s(n + 3, 0);
-                for (int i = 0; i < n; ++i) s[i] = static_cast<int>(static_cast<unsigned char>(text[i]));
+                for (int i = 0; i < n; ++i) s[i] = static_cast<int>(static_cast<unsigned char>(text[i])) + 1;
                 std::vector<int> SA(n, 0);
-                sim_dc3_suffixArray(s.data(), SA.data(), n, 255, sim_dc3);
+                sim_dc3_suffixArray(s.data(), SA.data(), n, 256, sim_dc3);
             }
 
             // Simular SA-IS
             CacheHierarchySimulator sim_sais;
             {
                 std::vector<int> s(n + 1, 0);
-                for (int i = 0; i < n; ++i) s[i] = static_cast<int>(static_cast<unsigned char>(text[i]));
+                for (int i = 0; i < n; ++i) s[i] = static_cast<int>(static_cast<unsigned char>(text[i])) + 1;
                 std::vector<int> SA(n + 1, -1);
-                sim_sais_core(s.data(), SA.data(), n, 255, sim_sais);
+                sim_sais_core(s.data(), SA.data(), n, 256, sim_sais);
             }
 
             const double dc3_ind_pct = 100.0 * static_cast<double>(sim_dc3.indirect_accesses) / sim_dc3.total_accesses;
@@ -769,7 +769,7 @@ int main(int argc, char* argv[]) {
         std::cout << "========================================================================================================\n";
         std::cout << " BENCHMARK SOBRE ARCHIVOS DE CORPUS EN data/\n";
         std::cout << "========================================================================================================\n";
-        std::cout << "Archivo                      |       n |  DC3(ms) | SAIS(ms) | Speedup | Depth(D/S) | Ratio(D / S) | B/char(D/S/Comp)\n";
+        std::cout << "Archivo                      |        n |  DC3(ms) | SAIS(ms) | Speedup | Depth(D/S) | Ratio(D / S) | B/char(D/S/Comp)\n";
         std::cout << "--------------------------------------------------------------------------------------------------------\n";
         for (int argi = 3; argi < argc; ++argi) {
             const std::string filepath = argv[argi];
@@ -783,7 +783,7 @@ int main(int argc, char* argv[]) {
             const BenchmarkRow r = run_single_benchmark(filepath, content, repetitions, max_naive_n);
             file_results.push_back(r);
             std::cout << std::left << std::setw(28) << r.dataset << std::right << " | "
-                      << std::setw(7) << r.n << " | "
+                      << std::setw(8) << r.n << " | "
                       << std::setw(8) << std::fixed << std::setprecision(2) << r.dc3_median_ms << " | "
                       << std::setw(8) << std::fixed << std::setprecision(2) << r.sais_median_ms << " | "
                       << std::setw(6) << std::fixed << std::setprecision(2) << r.speedup_dc3_over_sais << "x | "
@@ -805,7 +805,7 @@ int main(int argc, char* argv[]) {
     std::cout << " ETAPA 4: BENCHMARK EXPERIMENTAL DC3 (Karkkainen & Sanders) vs SA-IS (Nong, Zhang & Chan)\n";
     std::cout << "========================================================================================================\n\n";
 
-    const std::vector<int> sizes = {2000, 5000, 10000, 50000, 100000, 250000, 500000};
+    const std::vector<int> sizes = {2000, 10000, 50000, 100000, 500000, 1000000, 2000000};
     std::vector<BenchmarkRow> results;
 
     struct FamilySpec {
