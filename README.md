@@ -2,7 +2,7 @@
 
 **Curso:** CS3014 — Estructuras de Datos Avanzadas (UTEC, 2026-2)  
 **Estado del Proyecto:** Completado y Verificado (Etapas 1 a 5)  
-**Estándar:** C++17 (`-O3 -Wall -Wextra -Wpedantic`) + Pipeline Experimental en Python 3  
+**Estándar y Entorno:** C++17 (`g++ -std=c++17 -O3 -Wall -Wextra -Wpedantic`) · Windows 11 x86_64 · AMD Ryzen 7 7435HS (16 MB L3) · 24 GB RAM  
 
 ---
 
@@ -32,7 +32,7 @@ ProyectoEDA/
 │   ├── dc3.cpp                        # Adaptación C++17 de DC3 (leq, radixPass, dc3Phase1, suffixArray)
 │   └── sais.cpp                       # Adaptación C++17 de SA-IS (classifyLS, getBuckets, induceSAl/s, sais_core)
 ├── tests/
-│   └── test_runner.cpp                # Suite de 6 pruebas unitarias, casos con '\0' y 1,000 cadenas binarias aleatorias
+│   └── test_runner.cpp                # Suite de 6 pruebas unitarias (#undef NDEBUG), casos con '\0' y 1,000 binarias
 ├── bench/
 │   └── benchmark.cpp                  # Motor de benchmarks (n hasta 2,000,000, corpus de 1 MB y simulador L1/L2)
 ├── scripts/
@@ -42,7 +42,7 @@ ProyectoEDA/
 ├── data/
 │   ├── corpus_random.txt              # Corpus ASCII aleatorio uniforme (1,000,000 bytes, |Sigma| = 64)
 │   ├── corpus_dna.fasta               # Corpus genómico FASTA con repeticiones en tándem (1,000,000 bp, |Sigma| = 4)
-│   ├── corpus_source_code.txt         # Corpus de código fuente C/C++ real + módulos sintéticos (1,000,000 bytes, |Sigma| = 95)
+│   ├── corpus_source_code.txt         # Corpus C/C++ para preprocesamiento léxico y parsers LR(1) (1,000,000 B, |Sigma| = 95)
 │   └── corpus_periodic.txt            # Corpus altamente periódico / Fibonacci / repeticiones largas (1,000,000 bytes, |Sigma| = 10)
 ├── results/
 │   ├── benchmark_metrics.csv          # Métricas de escalabilidad sintética (n = 2,000 a n = 2,000,000)
@@ -65,7 +65,7 @@ ProyectoEDA/
 
 ### 3.1. Compilación de Binarios C++17 (`test_runner.exe` y `benchmark.exe`)
 
-Puedes compilar directamente con `g++` (MinGW-w64 / MSYS2) en modo optimizado `-O3`:
+Puedes compilar directamente con `g++` (MinGW-w64 / MSYS2) en modo optimizado `-O3` (tanto `test_runner.cpp` como `benchmark.cpp` incluyen `#undef NDEBUG` antes de `<cassert>` para que las verificaciones `assert(...)` nunca se desactiven, incluso si se compila con CMake en modo `Release`):
 
 ```powershell
 # Crear directorio de compilación si no existe
@@ -118,9 +118,10 @@ python scripts/plot_results.py
 
 ## 4. Resumen de Resultados Experimentales
 
-> **Nota Metodológica sobre Memoria (`B/char`):**  
-> - **`B/char (32b)`** (`dc3_bytes_per_char` y `sais_bytes_per_char`) mide de forma **analítica exacta** el pico de memoria reservado en el heap por los vectores `std::vector<int>` del algoritmo (`size() * sizeof(int)`) a través de los niveles recursivos.  
-> - **`Proy. Compact (B/char)`** (`sais_compact_bpc`) es una **proyección teórica** de la misma ejecución bajo el esquema compacto de la Tabla 1 de Nong et al. (2009), donde la entrada de nivel 0 ocupa `1 B/char`, `SA` ocupa `4 B/char` y el arreglo de tipos `t` se empaqueta a `1 bit/char`.
+> **Entorno y Metodología de Medición:**  
+> - **Hardware:** Windows 11 x86_64, CPU **AMD Ryzen 7 7435HS (16 MB de caché L3)** y **24 GB de RAM**.  
+> - **Memoria Analítica Total (`B/char` en 32b)** (`dc3_bytes_per_char` y `sais_bytes_per_char`): Mide de forma **analítica exacta** el pico de memoria reservado en el heap por los vectores `std::vector<int>` del algoritmo (`size() * sizeof(int)`) a través de los niveles recursivos. SA-IS ahorra entre un **`26% y 43%` global** (`38%–43%` en textos estructurados para $n = 2{,}000{,}000$, y `33%–43%` en todo el rango de textos estructurados). En **memoria auxiliar (`peak_aux_kb`)** en $n = 2{,}000{,}000$, el ahorro de SA-IS es de **entre `44%` (`random_ascii`) y `65%` (`periodic_str`)**.  
+> - **Proyección Compacta (`Proy. Compact B/char`)** (`sais_compact_bpc`): Proyección teórica partiendo de una base de nivel 0 de $1\text{ B/char}$ (`s`) $+ 4\text{ B/char}$ (`SA`) $+ 0.125\text{ B/char}$ (`t` en $1\text{ bit/char}$) $= 5.125\text{ B/char}$, dando un rango de **`5.18–6.10 B/char` en $n = 2{,}000{,}000$** (y `5.18–6.49 B/char` considerando desde $n = 2{,}000$). Adicionalmente, el binario consulta el RSS del proceso vía `GetProcessMemoryInfo` (`#ifdef _WIN32`, devuelve `0` en Linux).
 
 ### 4.1. Escalabilidad en Tamaños de Millones de Caracteres ($n = 1{,}000{,}000$ y $n = 2{,}000{,}000$)
 
@@ -137,13 +138,16 @@ Datos extraídos de [`results/benchmark_metrics.csv`](results/benchmark_metrics.
 | **`periodic_str`** (Periódica) | `1,000,000` | `46.04` | **`25.52`** | **`1.80x`** | `0.667` / `0.308` | `12` / `3` | `23.96` / `13.64` (`5.18`) |
 | **`periodic_str`** (Periódica) | `2,000,000` | `95.76` | **`72.66`** | **`1.32x`** | `0.667` / `0.308` | `13` / `3` | `23.98` / `13.64` (`5.18`) |
 
-> **Nota sobre el Baseline Ingenuo (`Naive SA`):** En `periodic_str` con apenas $n = 10{,}000$, `Naive SA` tarda **`183.66 ms`**, mientras que DC3 toma `0.65 ms` ($282\times$ más rápido) y SA-IS toma **`0.34 ms`** ($540\times$ más rápido).
+> **Observaciones clave del escalamiento:**  
+> 1. **Baseline Ingenuo (`Naive SA`):** En `periodic_str` con apenas $n = 10{,}000$, `Naive SA` tarda **`183.66 ms`**, mientras que DC3 toma `0.65 ms` ($282\times$ más rápido) y SA-IS toma **`0.34 ms`** ($540\times$ más rápido).  
+> 2. **Efecto de la profundidad recursiva (`Depth = 4` vs. `Depth = 1`):** En `dna_genome` y `source_code` ($n \ge 500{,}000$), alcanzar `Depth = 4` implica **5 niveles totales ($k = 0..4$)**, donde DC3 ejecuta **20 llamadas a `radixPass` y 5 fases de `merge`** ($\sum_{k=0}^4 (2/3)^k \approx 2.605n$), mientras que SA-IS acumula $\approx 1.542n$ en `dna_genome` ($\alpha \approx 0.355$) y $\approx 1.502n$ en `source_code` ($\alpha \approx 0.337$). En `periodic_str`, la profundidad de DC3 obedece exactamente a $\lfloor \log_3 n \rfloor = 6, 8, 9, 10, 11, 12, 13$ para $n = 2\text{K}\dots 2\text{M}$ ($3^{13} \approx 1.59\text{M}$).  
+> 3. **Transición de Caché L3 (16 MB) a DRAM:** El conteo de operaciones escala linealmente $\mathcal{O}(n)$, mientras que el incremento de tiempo físico entre $n = 1\text{M}$ y $n = 2\text{M}$ ($2.08\times\text{--}3.20\times$) se debe a que el espacio de trabajo ($\sim 28\text{--}48\text{ MB}$) rebasa los $16\text{ MB}$ de caché L3 del procesador hacia la DRAM.
 
 ---
 
 ### 4.2. Rendimiento sobre Archivos de Corpus de $1\text{ MB}$ en `data/`
 
-Datos extraídos de [`results/corpus_benchmark.csv`](results/corpus_benchmark.csv):
+Datos extraídos de [`results/corpus_benchmark.csv`](results/corpus_benchmark.csv) (evaluando `corpus_source_code.txt` como insumo representativo para herramientas de preprocesamiento léxico y analizadores sintácticos $LR(1)$):
 
 | Archivo de Corpus | Tamaño ($n$) | Tiempo DC3 (ms) | Tiempo SA-IS (ms) | Speedup (`DC3 / SA-IS`) | Razón Reducción ($\alpha_{\text{SA-IS}}$) | Profundidad Recursión (DC3 / SA-IS) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -156,7 +160,7 @@ Datos extraídos de [`results/corpus_benchmark.csv`](results/corpus_benchmark.cs
 
 ### 4.3. Perfilado de Localidad de Caché L1D (32 KB) y L2 (256 KB) ($n = 200{,}000$)
 
-Datos extraídos de [`results/cache_metrics.csv`](results/cache_metrics.csv):
+Datos extraídos de [`results/cache_metrics.csv`](results/cache_metrics.csv) (en SA-IS el barrido sobre `SA[i]` es secuencial, mientras que las lecturas `s[SA[i]-1]` y `t[SA[i]-1]` representan su $\sim 36.2\%$ de accesos indirectos, frente al $52.0\%\text{--}57.2\%$ de DC3):
 
 | Familia ($n = 200{,}000$) | % Accesos Indirectos (DC3 vs. SA-IS) | Tasa de Fallos L1 (DC3 vs. SA-IS) | Fallos L1 por Carácter (DC3 vs. SA-IS) | Reducción de Fallos L1 en SA-IS |
 | :--- | :---: | :---: | :---: | :---: |

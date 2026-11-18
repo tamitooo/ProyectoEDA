@@ -2,6 +2,7 @@
 #include "naive_sa.hpp"
 #include "sais.hpp"
 
+#undef NDEBUG
 #include <cassert>
 #include <iomanip>
 #include <iostream>

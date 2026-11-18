@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#undef NDEBUG
 #include <cassert>
 #include <chrono>
 #include <cstdint>
