@@ -7,9 +7,7 @@
 
 namespace eda {
 
-/**
- * @brief Constantes para los tipos de sufijos en el algoritmo SA-IS (Nong et al., 2009).
- */
+// Constantes para los tipos de sufijos en el algoritmo SA-IS
 constexpr int L_TYPE = 0;
 constexpr int S_TYPE = 1;
 
@@ -30,7 +28,7 @@ inline bool isLMS(int i, const int* t) {
     return i > 0 && t[i] == S_TYPE && t[i - 1] == L_TYPE;
 }
 
-// Compara dos subcadenas LMS que inician en pos1 y pos2 (Definicion 2.3 de Nong et al.).
+// Compara dos subcadenas LMS que inician en pos1 y pos2
 inline bool lmsSubstringsAreEqual(const int* s, const int* t, int n, int pos1, int pos2) {
     if (pos1 < 0 || pos2 < 0) {
         return false;
