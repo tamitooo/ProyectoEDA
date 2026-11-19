@@ -29,11 +29,7 @@ namespace eda {
 inline std::vector<int> build_naive_sa(const std::string& s) {
     const int n = static_cast<int>(s.size());
     std::vector<int> sa(n);
-
-    // Inicializamos SA con las posiciones originales: [0, 1, 2, ..., n-1]
     std::iota(sa.begin(), sa.end(), 0);
-
-    // Vista sin copia sobre el buffer de caracteres de la cadena original
     const std::string_view sv(s);
 
     // Ordenamos los indices comparando lexicograficamente los sufijos S[a..n-1] y S[b..n-1]
