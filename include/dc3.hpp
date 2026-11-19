@@ -19,29 +19,20 @@ struct DC3Stats {
     double bytes_per_char = 0.0;              // total_peak_bytes / n
 };
 
-/**
- * @brief Compara lexicograficamente dos pares de enteros (a1, a2) <= (b1, b2) en O(1).
- */
+// Compara lexicograficamente dos pares de enteros (a1, a2) <= (b1, b2) en O(1).
 inline bool leq(int a1, int a2, int b1, int b2) {
     return (a1 < b1 || (a1 == b1 && a2 <= b2));
 }
 
-/**
- * @brief Compara lexicograficamente dos tripletas (a1, a2, a3) <= (b1, b2, b3) en O(1).
- */
+// Compara lexicograficamente dos tripletas (a1, a2, a3) <= (b1, b2, b3) en O(1).
 inline bool leq(int a1, int a2, int a3, int b1, int b2, int b3) {
     return (a1 < b1 || (a1 == b1 && leq(a2, a3, b2, b3)));
 }
 
-/**
- * @brief Ordena de forma estable los indices en a[0..n-1] hacia b[0..n-1]
- *        usando claves enteras en el rango [0..K] extraidas de r.
- */
+// Ordena de forma estable los indices en a[0..n-1] hacia b[0..n-1] usando claves enteras en el rango [0..K] extraidas de r.
 void radixPass(const int* a, int* b, const int* r, int n, int K);
 
-/**
- * @brief Ejecuta la Fase 1 del algoritmo DC3 (Apendice A de Karkkainen & Sanders, 2003).
- */
+// Ejecuta la Fase 1 del algoritmo DC3 (Apendice A de Karkkainen & Sanders, 2003).
 int dc3Phase1(
     const int* s,
     int n,
@@ -51,9 +42,7 @@ int dc3Phase1(
     bool recurse_on_ties = false
 );
 
-/**
- * @brief Nucleo recursivo del algoritmo DC3 / Skew (Apendice A de Karkkainen & Sanders, 2003).
- */
+// Nucleo recursivo del algoritmo DC3 / Skew (Apendice A de Karkkainen & Sanders, 2003).
 void suffixArray(const int* s, int* SA, int n, int K);
 
 /**
@@ -65,6 +54,6 @@ void suffixArray(const int* s, int* SA, int n, int K);
  */
 std::vector<int> build_dc3_sa(const std::string& str, DC3Stats* stats = nullptr);
 
-} // namespace eda
+}
 
 #endif // DC3_HPP
