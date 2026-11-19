@@ -26,9 +26,6 @@ struct SAISStats {
     double compact_bytes_per_char = 0.0;      // Modelo compacto del paper (s en 1B, SA en 4B, t en 1 bit)
 };
 
-/**
- * @brief Determina en O(1) si la posicion i es un caracter/sufijo LMS (Leftmost S-type).
- */
 inline bool isLMS(int i, const int* t) {
     return i > 0 && t[i] == S_TYPE && t[i - 1] == L_TYPE;
 }
