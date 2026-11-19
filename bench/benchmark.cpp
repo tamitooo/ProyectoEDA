@@ -469,9 +469,7 @@ void sim_sais_core(const int* s, int* SA, int n, int K, CacheHierarchySimulator&
     sim_sais_induceSAs(t.data(), SA, s, bkt.data(), n, K, sim);
 }
 
-/**
- * @brief Genera una cadena aleatoria uniforme sobre un alfabeto de tamano sigma_size.
- */
+// Genera una cadena aleatoria uniforme sobre un alfabeto de tamano sigma_size.
 std::string generate_random_text(int n, int sigma_size, unsigned int seed = 42) {
     std::mt19937 rng(seed);
     std::uniform_int_distribution<int> dist(0, sigma_size - 1);
@@ -482,9 +480,7 @@ std::string generate_random_text(int n, int sigma_size, unsigned int seed = 42) 
     return s;
 }
 
-/**
- * @brief Genera una secuencia genomica sintetica sobre el alfabeto {A, C, G, T} con repeticiones.
- */
+// Genera una secuencia genomica sintetica sobre el alfabeto {A, C, G, T} con repeticiones.
 std::string generate_dna_sequence(int n, unsigned int seed = 1337) {
     static const char bases[4] = {'A', 'C', 'G', 'T'};
     std::mt19937 rng(seed);
@@ -504,9 +500,7 @@ std::string generate_dna_sequence(int n, unsigned int seed = 1337) {
     return s;
 }
 
-/**
- * @brief Genera un flujo sintetico de codigo fuente C++ (orientado a analizadores lexicos LR(1)).
- */
+// Genera un flujo sintetico de codigo fuente C++ (orientado a analizadores lexicos LR(1)).
 std::string generate_source_code(int n, unsigned int seed = 2026) {
     static const std::vector<std::string> tokens = {
         "int ", "void ", "for(int i=0;i<n;++i){", "if(s[i]<s[i+1]){",
@@ -524,9 +518,7 @@ std::string generate_source_code(int n, unsigned int seed = 2026) {
     return s;
 }
 
-/**
- * @brief Genera una cadena altamente periodica para estresar la profundidad recursiva.
- */
+// Genera una cadena altamente periodica para estresar la profundidad recursiva.
 std::string generate_periodic_string(int n) {
     const std::string pattern = "mississippi_mmiississippii_abracadabra_";
     std::string s;
@@ -752,7 +744,7 @@ int run_cache_profiler_mode(const std::string& csv_path) {
     return 0;
 }
 
-} // namespace
+}
 
 int main(int argc, char* argv[]) {
     const int repetitions = 5;

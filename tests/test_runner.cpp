@@ -39,7 +39,6 @@ void test_etapa1_naive_mississippi() {
     // 2. Construir el Suffix Array con el algoritmo ingenuo
     const std::vector<int> sa = eda::build_naive_sa(s);
 
-    // Resultado exacto esperado segun la Figura 1 de Karkkainen & Sanders (2003)
     const std::vector<int> expected_sa = {10, 7, 4, 1, 0, 9, 8, 6, 3, 5, 2};
 
     // 3. Imprimir tabla visual de los sufijos ordenados
