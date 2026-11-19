@@ -133,6 +133,6 @@ inline bool verify_suffix_array(const std::string& s, const std::vector<int>& sa
     return true;
 }
 
-} // namespace eda
+}
 
 #endif // NAIVE_SA_HPP
